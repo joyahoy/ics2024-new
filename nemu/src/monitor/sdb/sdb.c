@@ -23,6 +23,7 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+word_t vaddr_read(vaddr_t addr, int len);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -42,8 +43,50 @@ static char* rl_gets() {
   return line_read;
 }
 
+static int cmd_si(char *args) {
+  char* arg = strtok(NULL, " ");
+  int n;  
+  if(arg == NULL) {
+    n = 1;
+  }else {
+    n = atoi(arg);
+  }
+  cpu_exec(n);
+  return 0;
+}
+
 static int cmd_c(char *args) {
   cpu_exec(-1);
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  char* arg = strtok(NULL, " ");
+  if(strcmp(arg, "r") == 0) {
+    isa_reg_display();
+  }else if(strcmp(arg, "w") == 0) {
+    TODO();
+  }else {
+    printf("Unknown command. Try help.\n");
+  }
+  return 0;
+}
+
+static int cmd_x(char *args) {
+  char* arg1 = strtok(NULL, " ");
+  char* arg2 = strtok(NULL, " "); 
+  if(arg1 == NULL || arg2 == NULL) {
+    printf("Unknown command. Try help.\n");
+  }else {
+    int n = atoi(arg1);
+    vaddr_t addr;
+    sscanf(arg2, "%lx", &addr); 
+    Log("addr: 0x%lx",addr);
+    for(int i=0;i<n;i++) {
+      printf("0x%lx    0x%08lx\n", addr, vaddr_read(addr, 4));
+      addr += 4;
+    }
+  }
   return 0;
 }
 
@@ -61,7 +104,10 @@ static struct {
   int (*handler) (char *);
 } cmd_table [] = {
   { "help", "Display information about all supported commands", cmd_help },
+  { "si", "Usage: si [N]", cmd_si},
   { "c", "Continue the execution of the program", cmd_c },
+  { "info", "Usage: info r/w", cmd_info},
+  {"x", "Usage: x n expr", cmd_x},
   { "q", "Exit NEMU", cmd_q },
 
   /* TODO: Add more commands */
