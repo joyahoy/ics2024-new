@@ -110,13 +110,13 @@ static bool make_token(char *e) {
           case TK_DIV:
           case TK_LPAREN:
           case TK_RPAREN:
-            tokens[i].type = rules[i].token_type;
+            tokens[nr_token].type = rules[i].token_type;
 
           case TK_NUM:
-            tokens[i].type = rules[i].token_type;
+            tokens[nr_token].type = rules[i].token_type;
             if(substr_len > 31) panic("The number is too big!\n");
-            strncpy(tokens[i].str, e + position - substr_len, substr_len);  
-            tokens[i].str[substr_len] = '\0';
+            strncpy(tokens[nr_token].str, e + position - substr_len, substr_len);  
+            tokens[nr_token].str[substr_len] = '\0';
 
           default: nr_token ++;
         }
@@ -134,6 +134,93 @@ static bool make_token(char *e) {
   return true;
 }
 
+static bool check_parentheses(int p, int q) {
+  int cnt_l = 0;
+  //检查表达式是否正确
+  //从左往右遍历， 记录左括号的数量， 遇到右括号减
+  for(int i = p; i <= q ; i ++) {
+    if(tokens[i].type == TK_RPAREN) {
+      if(cnt_l == 0) {
+        panic("parentheses is wrong\n");
+      }
+      cnt_l--;
+    }else if(tokens[i].type == TK_LPAREN) {
+      cnt_l++;
+    }
+  }
+  if(cnt_l != 0) return false;
+  
+  if(tokens[p].type == TK_LPAREN && tokens[q].type == TK_RPAREN)
+    return true;
+
+  return false;
+}
+
+static int eval(int p, int q) {
+  if (p > q) {
+    //Bad expression
+    panic("expr is wrong\n");
+  }else if (p == q) {
+    // Must be number
+    assert(tokens[p].type == TK_NUM);
+    int res = atoi(tokens[p].str);
+    return res;
+  }else if (check_parentheses(p, q) == true) {
+    // 成立的话，就是去掉左右的括号，并且表达式内的括号正确
+    return eval(p+1, q-1);
+  }else {
+    //主运算符
+    //上面check确保了括号的正确
+    int op_type = 0;
+    int cnt_r = 0;
+    int op_addorsub = -1, op_mulordiv = -1;
+    for(int i = q; i >= p ; i --) {
+      if(tokens[i].type == TK_RPAREN) {
+        cnt_r ++;
+        continue;
+      }
+      if(tokens[i].type == TK_LPAREN) {
+        assert(cnt_r != 0);
+        cnt_r --;
+        continue;
+      }
+      
+      //此时不在括号里
+      if(cnt_r == 0) {
+        if(tokens[i].type == TK_ADD || tokens[i].type == TK_SUB) {
+          op_addorsub = i;
+          op_type = tokens[i].type;
+          break;
+        }
+        if(tokens[i].type == TK_MUL || tokens[i].type == TK_DIV) {
+          if(op_mulordiv != -1) continue;
+          op_mulordiv = i;
+          op_type = tokens[i].type;
+        }
+      }
+    }
+    assert(op_addorsub != -1 || op_mulordiv != -1);
+    int idx;
+    if(op_addorsub != -1) {
+      idx = op_addorsub;
+    }else {
+      idx = op_mulordiv;
+    }
+    int val1 = eval(p, idx -1);
+    int val2 = eval(idx+1, q);
+    switch(op_type) {
+      case TK_ADD :
+        return val1 + val2; break;
+      case TK_SUB :
+        return val1 - val2; break;
+      case TK_MUL :
+        return val1 * val2; break;
+      case TK_DIV :
+        return val1 / val2; break;
+      default : assert(0);
+    }
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
@@ -143,6 +230,8 @@ word_t expr(char *e, bool *success) {
 
   /* TODO: Insert codes to evaluate the expression. */
   //TODO();
+  word_t ret = eval(0, nr_token-1);
+  *success = true;
 
-  return 0;
+  return ret;
 }

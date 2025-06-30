@@ -90,10 +90,11 @@ static int cmd_x(char *args) {
   return 0;
 }
 
-static int cmd_expr(char *args) {
+static int cmd_p(char *args) {
   bool success;
-  expr(args, &success);
-  //TODO();
+  word_t res = expr(args, &success);
+  assert(success);
+  printf("%s = %ld\n", args, res);
   return 0;
 }
 
@@ -115,7 +116,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "info", "Usage: info r/w", cmd_info},
   {"x", "Usage: x n expr", cmd_x},
-  {"p", "Usage: p EXPR", cmd_expr},
+  {"p", "Usage: p EXPR", cmd_p},
   { "q", "Exit NEMU", cmd_q },
 
   /* TODO: Add more commands */
