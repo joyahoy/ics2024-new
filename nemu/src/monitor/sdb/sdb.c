@@ -90,6 +90,13 @@ static int cmd_x(char *args) {
   return 0;
 }
 
+static int cmd_expr(char *args) {
+  bool success;
+  expr(args, &success);
+  //TODO();
+  return 0;
+}
+
 
 static int cmd_q(char *args) {
   nemu_state.state = NEMU_QUIT;
@@ -108,6 +115,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "info", "Usage: info r/w", cmd_info},
   {"x", "Usage: x n expr", cmd_x},
+  {"p", "Usage: p EXPR", cmd_expr},
   { "q", "Exit NEMU", cmd_q },
 
   /* TODO: Add more commands */

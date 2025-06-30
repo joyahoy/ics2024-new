@@ -21,8 +21,7 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
-
+  TK_NOTYPE = 256, TK_EQ, TK_NUM, TK_ADD, TK_SUB, TK_MUL, TK_DIV, TK_LPAREN, TK_RPAREN
   /* TODO: Add more token types */
 
 };
@@ -37,8 +36,14 @@ static struct rule {
    */
 
   {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
   {"==", TK_EQ},        // equal
+  {"[0-9]+", TK_NUM},     // number
+  {"\\+", TK_ADD},         // plus
+  {"\\-", TK_SUB},         // sub
+  {"\\*", TK_MUL},         // multi
+  {"\\/", TK_DIV},         // div
+  {"\\(", TK_LPAREN},      // lparen
+  {"\\)", TK_RPAREN},      // rparen
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -94,8 +99,26 @@ static bool make_token(char *e) {
          * of tokens, some extra actions should be performed.
          */
 
+        //默认空格不算token, 其他都加入tokens数组，所以default让nr_token ++
         switch (rules[i].token_type) {
-          default: TODO();
+          case TK_NOTYPE:
+            break;
+
+          case TK_ADD:
+          case TK_SUB:
+          case TK_MUL:
+          case TK_DIV:
+          case TK_LPAREN:
+          case TK_RPAREN:
+            tokens[i].type = rules[i].token_type;
+
+          case TK_NUM:
+            tokens[i].type = rules[i].token_type;
+            if(substr_len > 31) panic("The number is too big!\n");
+            strncpy(tokens[i].str, e + position - substr_len, substr_len);  
+            tokens[i].str[substr_len] = '\0';
+
+          default: nr_token ++;
         }
 
         break;
@@ -119,7 +142,7 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
-  TODO();
+  //TODO();
 
   return 0;
 }
