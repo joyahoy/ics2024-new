@@ -25,6 +25,13 @@ void init_regex();
 void init_wp_pool();
 word_t vaddr_read(vaddr_t addr, int len);
 
+
+//word_t paddr_read(paddr_t addr, int len);
+word_t expr(char *e, bool *success);
+void new_wp(char *e);
+void free_wp(int NO);
+void watchpoint_display();
+
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -65,7 +72,7 @@ static int cmd_info(char *args) {
   if(strcmp(arg, "r") == 0) {
     isa_reg_display();
   }else if(strcmp(arg, "w") == 0) {
-    TODO();
+    watchpoint_display();	
   }else {
     printf("Unknown command. Try help.\n");
   }
@@ -90,11 +97,25 @@ static int cmd_x(char *args) {
   return 0;
 }
 
+static int cmd_w(char *args) {
+  char *expr = strtok(NULL, " ");
+  new_wp(expr);
+  return 0;
+}
+
 static int cmd_p(char *args) {
-  bool success;
+  bool success = false;
   word_t res = expr(args, &success);
   assert(success);
   printf("%s = %u\n", args, res);
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  char* arg = strtok(NULL, " ");
+  int NO = -1;
+  sscanf(arg, "%d", &NO);
+  free_wp(NO);
   return 0;
 }
 
@@ -115,8 +136,10 @@ static struct {
   { "si", "Usage: si [N]", cmd_si},
   { "c", "Continue the execution of the program", cmd_c },
   { "info", "Usage: info r/w", cmd_info},
-  {"x", "Usage: x n expr", cmd_x},
-  {"p", "Usage: p EXPR", cmd_p},
+  { "x", "Usage: x n expr", cmd_x},
+  { "w", "w EXPR 当表达式EXPR的值发生变化时, 暂停程序执行", cmd_w },
+  { "p", "Usage: p EXPR", cmd_p},
+  { "d", "delete the Nth wwatchpoint", cmd_d },
   { "q", "Exit NEMU", cmd_q },
 
   /* TODO: Add more commands */
