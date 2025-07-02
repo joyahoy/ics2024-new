@@ -31,8 +31,78 @@ static char *code_format =
 "  return 0; "
 "}";
 
-static void gen_rand_expr() {
-  buf[0] = '\0';
+static char *buf_start = buf;
+static char *buf_end = buf+(sizeof(buf)/sizeof(buf[0]));
+
+static int choose(int n) {
+	  return rand() % n;
+}
+
+static void gen_space() {
+  int size = choose(4);
+  if (buf_start < buf_end) {
+    int available = buf_end - buf_start;
+    int n_writes = snprintf(buf_start, available, "%*s", size, "");
+    if (n_writes > 0) {
+        int actual = n_writes < available ? n_writes : available - 1;
+        buf_start += actual;
+    }
+  }
+}
+
+static void gen_num() {
+  int num = choose(INT8_MAX);
+  if (buf_start < buf_end) {
+    int available = buf_end - buf_start;
+    int n_writes = snprintf(buf_start, available, "%d", num);
+    if (n_writes > 0) {
+        int actual = n_writes < available ? n_writes : available - 1;
+        buf_start += actual;
+    }
+  }
+  gen_space();
+}
+
+static void gen_char(char c) {
+  if (buf_start < buf_end) {
+    int available = buf_end - buf_start;
+    int n_writes = snprintf(buf_start, available, "%c", c);
+    if (n_writes > 0) {
+        int actual = n_writes < available ? n_writes : available - 1;
+        buf_start += actual;
+    }
+  }
+}
+
+static char* ops[] = {"&&", "==", "!=", "+", "-", "*", "/"};
+static void gen_rand_op(){
+	int op_index = choose(sizeof(ops)/sizeof(ops[0]));
+	char* op = ops[op_index];
+	if(buf_start < buf_end) {
+		int available = buf_end - buf_start;
+		int n_writes = snprintf(buf_start, available, "%s", op);
+		if(n_writes > 0) {
+			int actual = n_writes < available ? n_writes : available - 1;
+			buf_start += actual;
+		}
+	}	
+}
+//疑问： 如果递归都是第三种，递归的深度
+#define MAX_DEPTH 100
+static void gen_rand_expr(int depth) {
+	if (depth > MAX_DEPTH) {
+    gen_num();
+    return;
+  }
+  switch (choose(3)) {
+    case 0: gen_num(); break;
+    case 1: gen_char('('); gen_rand_expr(depth + 1); gen_char(')'); break;
+    default:
+      gen_rand_expr(depth + 1);
+      gen_rand_op();
+      gen_rand_expr(depth + 1);
+      break;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -44,7 +114,8 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
-    gen_rand_expr();
+		buf_start = buf; // 重置缓冲区指针
+    gen_rand_expr(0);
 
     sprintf(code_buf, code_format, buf);
 
@@ -52,8 +123,8 @@ int main(int argc, char *argv[]) {
     assert(fp != NULL);
     fputs(code_buf, fp);
     fclose(fp);
-
-    int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
+		// filter div-by-zero expressions
+    int ret = system("gcc /tmp/.code.c -Wall -Werror -Wdiv-by-zero -o /tmp/.expr");
     if (ret != 0) continue;
 
     fp = popen("/tmp/.expr", "r");

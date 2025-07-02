@@ -25,10 +25,21 @@ const char *regs[] = {
 
 void isa_reg_display() {
   for(int i=0;i<32;i++) {
-    printf("%-4s           0x%-16lx %-20lu\n", regs[i], gpr(i), gpr(i));
+    printf("%-4s           0x%-16x %-20u\n", regs[i], gpr(i), gpr(i));
   }
 }
 
+//获取寄存器的值
 word_t isa_reg_str2val(const char *s, bool *success) {
+	//等号右结合
+	const char *s_reg = s = (s+1);
+	int length = sizeof(regs)/sizeof(regs[0]);
+	for(int i=0;i<length;i++){
+		if(strcmp(s_reg,regs[i]) == 0){
+			*success = true;
+			return cpu.gpr[i];	
+		}
+	}
+	*success = false;
   return 0;
 }
