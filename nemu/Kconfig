@@ -165,6 +165,10 @@ config WATCHPOINT
   bool "Enable watchpoint"
   default n
 
+config MTRACE
+  bool "Enable memory tracer"
+  default n 
+
 choice
   prompt "Reference design"
   default DIFFTEST_REF_SPIKE if ISA_riscv
