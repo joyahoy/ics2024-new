@@ -98,7 +98,9 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem    , R, R(rd) = (int32_t)src1 % (int32_t)src2);
   INSTPAT("??????? ????? ????? 001 ????? 00000 11", lh     , I, R(rd) = (int16_t)Mr(src1 + imm, 2));
   INSTPAT("??????? ????? ????? 101 ????? 00000 11", lhu    , I, R(rd) = (uint16_t)Mr(src1 + imm, 2));
-  INSTPAT("0000001 ????? ????? 001 ????? 01100 11", mulh   , R, R(rd) = (int32_t)(((int64_t)src1 * (int64_t)src2) >> 32));
+  INSTPAT("0000001 ????? ????? 001 ????? 01100 11", mulh   , R, R(rd) = (uint32_t)(int32_t)(((int64_t)(int32_t)src1 * (int64_t)(int32_t)src2) >> 32));
+  INSTPAT("0000001 ????? ????? 010 ????? 01100 11", mulhsu , R, R(rd) = (uint32_t)(int32_t)(((int64_t)(int32_t)src1 * (uint64_t)(uint32_t)src2) >> 32));
+  INSTPAT("0000001 ????? ????? 011 ????? 01100 11", mulhu  , R, R(rd) = (uint32_t)(((uint64_t)(uint32_t)src1 * (uint64_t)(uint32_t)src2) >> 32));
   INSTPAT("0000001 ????? ????? 111 ????? 01100 11", remu   , R, R(rd) = src1 % src2);
   INSTPAT("0000001 ????? ????? 101 ????? 01100 11", divu   , R, R(rd) = src1 / src2);
   INSTPAT("0100000 ????? ????? 101 ????? 01100 11", sra    , R, R(rd) = (int32_t)src1 >> src2);
@@ -118,7 +120,37 @@ static int decode_exec(Decode *s) {
   return 0;
 }
 
+#ifdef CONFIG_ITRACE
+#define IRINGBUF_SIZE 16
+static vaddr_t iringbuf[IRINGBUF_SIZE];
+static int iringbuf_pointer = -1;
+
+void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+#define DIS_BUFSIZE 64
+char dis_buf[DIS_BUFSIZE];
+
+void print_itrace_iringbuf() {
+  for(int i = 0; i < IRINGBUF_SIZE; i ++) {
+    if (i == iringbuf_pointer) {
+      printf("--->");
+    }
+
+    vaddr_t addr = iringbuf[i];
+    if (addr > 0) {  //针对iringbuf未装满的情况
+      int inst = inst_fetch(&addr, 4); // 取指令
+      printf("\t0x%08x", addr); //输出地址
+      disassemble(dis_buf, DIS_BUFSIZE, addr, (uint8_t*)&inst, 4); //输出指令反汇编结果
+      printf("\t%s\n", dis_buf);
+    }
+  }
+}
+#endif
+
 int isa_exec_once(Decode *s) {
+#ifdef CONFIG_ITRACE
+   iringbuf_pointer = (iringbuf_pointer + 1) % IRINGBUF_SIZE;
+   iringbuf[iringbuf_pointer] = s->snpc; //记录指令
+#endif
   s->isa.inst = inst_fetch(&s->snpc, 4);
   return decode_exec(s);
 }

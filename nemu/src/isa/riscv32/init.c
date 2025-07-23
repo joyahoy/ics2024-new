@@ -26,6 +26,19 @@ static const uint32_t img [] = {
   0xdeadbeef,  // some data
 };
 
+// static const uint32_t img[] = {
+//     // 1. 加载超大地址到寄存器（例如 0x100000000）
+//     0x10000337,          // lui t1, 0x10000      (t1 = 0x10000000 << 12 = 0x100000000)
+//     0x00032023,          // sw zero, 0(t1)       *尝试写入 0x100000000*
+
+//     // 2. 从超大地址读取数据
+//     0x10000437,          // lui s0, 0x10000      (s0 = 0x100000000)
+//     0x00042583,          // lw a1, 0(s0)         *尝试读取 0x100000000*
+
+//     // 3. 终止程序（可选）
+//     0x00100073,          // ebreak (nemu_trap)
+// };
+
 static void restart() {
   /* Set the initial program counter. */
   cpu.pc = RESET_VECTOR;
